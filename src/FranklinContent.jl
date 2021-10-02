@@ -5,8 +5,10 @@ using Franklin; const fr = Franklin;
 using DataStructures:DefaultDict
 using Franklin: convert_md, convert_html, pagevar, globvar, locvar, path;
 using Dates: DateFormat, Date
-using Memoization: @memoize
+using Memoization
 using Gumbo: HTMLElement
+
+export post_crumbs, hfun_canonical_link
 
 @doc "Text wrapped in an HTML tag with a specified color."
 function hfun_color(args)
@@ -117,36 +119,6 @@ end
 
 function hfun_taglist_desc(tags::AbstractVector)
     hfun_taglist_desc(tags[1])
-end
-
-@doc "The HTML page title to give to tags archival pages."
-function hfun_tag_title()::String
-    tag = locvar(:fd_tag)::String
-    tag_page = globvar("tag_page_path")
-    c = IOBuffer()
-    write(c, "<div id=\"tag_title\"><div class=\"wrap\">")
-    if tag === "posts"
-        write(
-            c,
-            "<a href=\"/$tag_page/posts/\"><h1>Posts</h1></a>
-<i>that\"s the stuff</i>",
-        )
-    elseif tag === "bulbs"
-        write(
-            c,
-            "<a href=\"/$tag_page/bulbs/\"><h1>Ideas</h1></a>
-<i>commonly known as shower thoughts</i>",
-        )
-    elseif tag === "about"
-        write(c, "<a href=\"/$tag_page/about/\"><h1>About</h1></a>
-<i>software that I have written</i>")
-    else
-        write(c, "Articles tagged: <a href=\"/$tag_page/$tag/\">$tag</a>")
-    end
-    write(c, "</div></div>")
-    str = String(take!(c))
-    close(c)
-    str
 end
 
 @doc "The base font size for tags in the tags cloud (rem)."
@@ -422,9 +394,9 @@ function hfun_canonical_link()
 end
 
 @doc "A breadcrumbs list (title, path), where the last element is left to be filled."
-@memoize function base_crumbs()
-	[("Home", locvar(:website_url)),
-     ("Posts List", joinpath(locvar(:website_url),
+function base_crumbs()
+	[("Home", globvar(:website_url)),
+     ("Posts List", joinpath(globvar(:website_url),
                              globvar(:posts_path))),
      ("", "")]
 end
@@ -434,6 +406,14 @@ function post_crumbs()
     crumbs = base_crumbs()
     crumbs[end] = (locvar(:title; default=""), canonical_url())
     crumbs
+end
+
+function franklincontent_hfuncs()
+    for sym in names(@__MODULE__; all=true)
+        if startswith(string(sym), "hfun_")
+            @eval export $sym
+        end
+    end
 end
 
 end # module
