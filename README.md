@@ -1,7 +1,7 @@
 # FranklinContent.jl 
 Methods for working with Franklin.jl based sites.
 
-[API Reference](/docs/bulid)
+[API Reference](https://franklin.unto.re/docs/build/)
 
 # Features
 Some things you can generate:
