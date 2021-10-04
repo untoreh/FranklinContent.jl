@@ -1,5 +1,7 @@
-# FranklinContent.jl
+# FranklinContent.jl 
 Methods for working with Franklin.jl based sites.
+
+[API Reference](/docs/bulid)
 
 # Features
 Some things you can generate:
