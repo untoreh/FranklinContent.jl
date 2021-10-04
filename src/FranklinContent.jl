@@ -8,7 +8,6 @@ using Dates: DateFormat, Date
 using Memoization
 using Gumbo: HTMLElement
 
-export post_crumbs, hfun_canonical_link
 
 @doc "Text wrapped in an HTML tag with a specified color."
 function hfun_color(args)
@@ -82,6 +81,10 @@ function tags_sorter(p)
     return pvd
 end
 
+function hfun_taglist_desc(tags::AbstractVector)
+    hfun_taglist_desc(tags[1])
+end
+
 @doc "All the pages for a particular tag."
 function hfun_taglist_desc(tag::Union{Nothing,AbstractString}=nothing)
     if isnothing(tag)
@@ -115,10 +118,6 @@ function hfun_taglist_desc(tag::Union{Nothing,AbstractString}=nothing)
     html = String(take!(c))
     close(c)
     return html
-end
-
-function hfun_taglist_desc(tags::AbstractVector)
-    hfun_taglist_desc(tags[1])
 end
 
 @doc "The base font size for tags in the tags cloud (rem)."
@@ -357,6 +356,7 @@ icons_tags =
                     "tools" => "fas fa-tools",
                     "trading" => "fas fa-chart-line"
                 ))
+@doc "Wraps the `icon_tags` dict."
 hfun_icon_tag(tag) = icons_tags[tag]
 
 
@@ -415,5 +415,7 @@ function franklincontent_hfuncs()
         end
     end
 end
+
+export post_crumbs, page_content, iter_posts, tag_link, post_link, is_index, is_post, is_tag, lx_fun
 
 end # module
