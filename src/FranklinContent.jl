@@ -102,6 +102,10 @@ function hfun_taglist_desc(tag::Union{Nothing,AbstractString}=nothing)
     if isnothing(all_tags)
         all_tags = fr.invert_dict(globvar(:fd_page_tags))
     end
+    tag ∉ keys(all_tags) && begin
+        @warn "tag: $tag not found"
+        return ""
+    end
     rpaths = all_tags[tag]
     sort!(rpaths, by=tags_sorter, rev=false)
 
