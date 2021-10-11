@@ -8,6 +8,11 @@ using Dates: DateFormat, Date
 using Memoization
 using Gumbo: HTMLElement
 
+@doc "Wrapper for Franklin.locvar."
+function hfun_locvar(args)
+	name = args[1];
+    locvar(Symbol(name))
+end
 
 @doc "Text wrapped in an HTML tag with a specified color."
 function hfun_color(args)
@@ -28,6 +33,15 @@ function page_content(loc::String)
     # remove all `{{}}` functions
     m = replace(m, r"{{.*?}}" => "")
     convert_html(m)
+end
+
+@doc "The page description, otherwise the website description."
+function hfun_page_desc()
+	desc = locvar(:rss_description)
+    if desc === ""
+        return globvar(:website_description)
+    end
+    desc
 end
 
 
