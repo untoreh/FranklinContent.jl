@@ -82,6 +82,7 @@ const styles_str = Ref("")
 const styles_scripts = Vector{String}()
 const style_el = HTMLElement(:style)
 setattr!(style_el, "amp-custom", "")
+setattr!(style_el, "type", "text/css")
 
 function fetch_style(el, styles)
     style_source = getattr(el, "href")
@@ -101,14 +102,18 @@ function process_head(in_head, out_head, styles)
     for el in in_head.children
         tp = typeof(el)
         if tp ∈ skip_nodes continue end
-        if canonical_unset && islink(el, "canonical")
-            push!(out_head, el)
+        if tp === HTMLElement{:link}
+            if canonical_unset && islink(el, "canonical")
+                push!(out_head, el)
+                canonical_unset = false
+            elseif islink(el, "icon")
+                push!(out_head, el)
+            elseif islink(el, "stylesheet")
+                fetch_style(el, styles)
+            end
         elseif title_unset && tp === HTMLElement{:title}
             push!(out_head, el)
             title_unset = false
-        elseif tp === HTMLElement{:link} &&
-            islink(el, "stylesheet")
-            fetch_style(el, styles)
         elseif tp === HTMLElement{:script} &&
             isldjson(el)
             push!(out_head, el)
@@ -116,25 +121,13 @@ function process_head(in_head, out_head, styles)
     end
 end
 
-function recursive_cleanup(el, tp)
-    tp === HTMLText && return
-    delete!(el.attributes, "onclick")
-    for (n, child) in enumerate(el.children)
-        tc = typeof(child)
-        if tc ∈ skip_nodes
-            deleteat!(el.children, n)
-        else
-            recursive_cleanup(child, tc)
-        end
-    end
-end
-
-function process_body(in_body, out_body, styles)
-    for el in in_body.children
+function process_body(in_el, out_body, out_head, styles, lv=false)
+    for (n, el) in enumerate(in_el.children)
         tp = typeof(el)
-        if tp ∈ skip_nodes continue end
-        # handle in body styles
-        if tp === HTMLElement{:link} &&
+        if tp ∈ skip_nodes
+            deleteat!(in_el.children, n)
+            continue
+        elseif tp === HTMLElement{:link} &&
             islink(el, "stylesheet")
             fetch_style(el, styles)
         elseif tp === HTMLElement{:style}
@@ -143,10 +136,14 @@ function process_body(in_body, out_body, styles)
             # remove element children to skip over iteration
             empty!(el.children)
         elseif tp === HTMLElement{:script}
+            # only include ld+json scripts, ignore the rest
             isldjson(el) && push!(out_head, el)
         else
-            recursive_cleanup(el, tp)
-            push!(out_body, el)
+            if tp !== HTMLText && length(el.children) !== 0
+                process_body(el, out_body, out_head, styles, true)
+            end
+            # only add top level children
+            lv || push!(out_body, el)
         end
     end
 end
@@ -166,22 +163,22 @@ function amppage(file)
 
     process_head(in_head, out_head, styles_scripts)
 
-    process_body(in_body, out_body, styles_scripts)
-    filter!(x -> typeof(x) ∈ skip_nodes, out_body.children)
+    process_body(in_body, out_body, out_head, styles_scripts)
 
     # add remaining styles to head
-    ss = styles_str[] = join(styles_scripts) |>
+    ss = styles_str[] = join(styles_scripts, "\n") |>
         # NOTE: the replacement should be ordered from most frequent to rarest
         # # remove troublesome animations
-        x -> replace(x, r"\s+@-?.*?keyframes\s+?.+?{\s*?.+?({.+?})*?\s*?}"s => "") |>
+        x -> replace(x, r"\s*?@(\-[a-zA-Z]+-)?keyframes\s+?.+?{\s*?.+?({.+?})+?\s*?}"s => "") |>
         # # remove !important hints
         x -> replace(x, r"!important" => "") |>
         # remove charset since not allowed
-        x -> replace(x, r"@charset\s+\"utf-8\"\s*?"i => "")
-
-    # Ensure CSS is less than maximum amp size of 150KB
-    # NOTE: this doesn't take into account boilerplate css
-    @assert length(ss) < 150000
+        x -> replace(x, r"@charset\s+\"utf-8\"\s*;?"i => "")
+    write("/tmp/__site/test.css", ss)
+    throw("ok")
+    # Ensure CSS is less than maximum amp size of 75KB
+    # NOTE: this doesn't take into account inline css
+    @assert length(ss) < 75000
     empty!(style_el.children)
     push!(style_el, HTMLText(ss))
 
@@ -203,13 +200,10 @@ function ampdir(path)
                           ex_dirs=Set(["amp"]),
                           subdir=false)
         html = amppage(file)
-        out_file = joinpath(amp_dir,
-                            replace(file, rpl))
+        out_file = joinpath(amp_dir, replace(file, rpl))
         out_dir = dirname(out_file)
         if !isdir(out_dir) mkpath(out_dir) end
-        @show html
         write(out_file, html)
-        return
     end
     cd(cwd)
 end
