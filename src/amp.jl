@@ -130,14 +130,15 @@ function process_body(in_el, out_body, out_head, styles, lv=false)
         elseif tp === HTMLElement{:link} &&
             islink(el, "stylesheet")
             fetch_style(el, styles)
+            deleteat!(in_el.children, n)
         elseif tp === HTMLElement{:style}
             # NOTE: this is supposed to be a text element
             push!(styles, el.children[1].text)
-            # remove element children to skip over iteration
-            empty!(el.children)
+            deleteat!(in_el.children, n)
         elseif tp === HTMLElement{:script}
             # only include ld+json scripts, ignore the rest
             isldjson(el) && push!(out_head, el)
+            deleteat!(in_el.children, n)
         else
             if tp !== HTMLText && length(el.children) !== 0
                 process_body(el, out_body, out_head, styles, true)
