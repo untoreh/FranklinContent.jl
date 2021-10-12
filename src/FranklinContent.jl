@@ -426,6 +426,13 @@ function post_crumbs()
     crumbs
 end
 
+function hfun_insertsearch()
+    if locvar(:fd_rpath) === "search.md"
+        return read(joinpath(fr.path(:layout), "lunr_include.html"), String)
+    end
+    ""
+end
+
 function franklincontent_hfuncs()
     for sym in names(@__MODULE__; all=true)
         if startswith(string(sym), "hfun_")
