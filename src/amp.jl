@@ -15,7 +15,7 @@ function set_root(root=dirname(project().path))
     root_dir[] = root
 end
 
-skip_nodes = Set(HTMLElement{sym} for sym in [:applet, :audio, :canvas, :embed, :video, :img, :button, :form])
+skip_nodes = Set(HTMLElement{sym} for sym in [:iframe, :applet, :audio, :canvas, :embed, :video, :img, :button, :form])
 
 @inline function islink(el, rel="canonical")
     getattr(el, "rel", "") === rel
@@ -174,8 +174,6 @@ function amppage(file)
         x -> replace(x, r"!important" => "") |>
         # remove charset since not allowed
         x -> replace(x, r"@charset\s+\"utf-8\"\s*;?"i => "")
-    write("/tmp/__site/test.css", ss)
-    throw("ok")
     # Ensure CSS is less than maximum amp size of 75KB
     # NOTE: this doesn't take into account inline css
     @assert length(ss) < 75000
@@ -185,7 +183,7 @@ function amppage(file)
     string(amp_doc)
 end
 
-function ampdir(path)
+function ampdir(path; dirs=["posts", "tag", "reads", "_rss"])
     @assert isdir(path) "Path $path is not a valid directory"
     dir = isdirpath(path) ? dirname(path) : path
     rpl = Regex("^$dir/") => ""
@@ -196,7 +194,7 @@ function ampdir(path)
     if !isdir(amp_dir) mkpath(amp_dir) end
 
     for file in walkfiles(dir; exts=Set((".html",)),
-                          dirs=Set(["posts", "tag", "reads", "_rss"]),
+                          dirs=Set(dirs),
                           ex_dirs=Set(["amp"]),
                           subdir=false)
         html = amppage(file)

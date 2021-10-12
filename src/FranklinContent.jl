@@ -434,6 +434,11 @@ function franklincontent_hfuncs()
     end
 end
 
+function load_amp()
+    include(joinpath(dirname(@__FILE__), "amp.jl"))
+    @eval export AMP
+end
+
 export post_crumbs, page_content, iter_posts, tag_link, post_link, is_index, is_post, is_tag, lx_fun
 
 end # module
