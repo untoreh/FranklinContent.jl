@@ -208,9 +208,10 @@ function hfun_tags_cloud()
 end
 
 @doc "The absolute or relative post link from a file path."
-function post_link(file_path, code=""; rel=true)
+function post_link(file_path, code=""; rel=true, amp=false)
     let name = splitext(file_path)[1]
         joinpath(rel ? "/" : globvar(:website_url),
+                 amp ? "amp/" : "",
                  code,
                  replace(name, r"(index|404)$" => ""))
     end
@@ -395,19 +396,57 @@ function canonical_link_el(url::AbstractString="")
 end
 
 @doc "The canonical url from franklin current (local) page vars."
-@inline function canonical_url(;code="")
-    locvar(:fd_rpath; default="") |> x -> post_link(x, code; rel=false)
+@inline function canonical_url(;code="", amp=false)
+    locvar(:fd_rpath; default="") |> x -> post_link(x, code; rel=false, amp)
 end
 
 @doc "The canonical url of a given file path."
-@inline function canonical_url(path; code="")
-    post_link(path, code; rel=false)
+@inline function canonical_url(path; code="", amp=false)
+    post_link(path, code; rel=false, amp)
 end
 
 @doc "The html link tag for the current canonical url."
 function hfun_canonical_link()
 	"<link rel=\"canonical\" href=\"" *
         canonical_url() *
+        "\">"
+end
+
+@doc "The html link tag for the canonical url of the current TAG page."
+function hfun_canonical_link_tag()
+    tag_path = joinpath(locvar(:tag_page_path), locvar(:fd_tag))
+	"<link rel=\"canonical\" href=\"" *
+        canonical_url(tag_path) *
+        "\">"
+end
+
+@doc "The html link tag for the canonical url of the given path."
+function hfun_canonical_link(args)
+	"<link rel=\"canonical\" href=\"" *
+        canonical_url(args[1]) *
+        "\">"
+end
+
+@doc "The html link tag for the AMP url of the current page."
+function hfun_amp_link()
+    # @show keys(fr.LOCAL_VARS)
+	"<link rel=\"amphtml\" href=\"" *
+        canonical_url(;amp=true) *
+        "\">"
+end
+
+@doc "The html link tag for the AMP url of the given path."
+function hfun_amp_link(args)
+	"<link rel=\"amphtml\" href=\"" *
+        canonical_url(args[1] ;amp=true) *
+        "\">"
+end
+
+@doc "The html link tag for the AMP url of the current TAG path."
+function hfun_amp_link_tag()
+    tag_path = joinpath(locvar(:tag_page_path), locvar(:fd_tag))
+	"<link rel=\"amphtml\" href=\"" *
+        canonical_url(tag_path ;amp=true) *
         "\">"
 end
 
@@ -424,6 +463,13 @@ function post_crumbs()
     crumbs = base_crumbs()
     crumbs[end] = (locvar(:title; default=""), canonical_url())
     crumbs
+end
+
+function tags_crumbs()
+    tag_path = joinpath(locvar(:tag_page_path), locvar(:fd_tag))
+    [("Home", globvar(:website_url)),
+     ("Tags List", joinpath(globvar(:website_url), globvar(:tag_page_path))),
+     (locvar(:fd_tag; default=""), canonical_url(tag_path))]
 end
 
 function hfun_insertsearch()
@@ -446,6 +492,6 @@ function load_amp()
     @eval export AMP
 end
 
-export post_crumbs, page_content, iter_posts, tag_link, post_link, is_index, is_post, is_tag, lx_fun
+export tags_crumbs, post_crumbs, page_content, iter_posts, tag_link, post_link, is_index, is_post, is_tag, lx_fun
 
 end # module
