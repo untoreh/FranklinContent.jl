@@ -121,30 +121,51 @@ function process_head(in_head, out_head, styles)
     end
 end
 
+function recursive_check(el)
+    if typeof(el) <: HTMLElement
+        if length(el.children) > 0
+            for c in el.children
+                recursive_check(c)
+            end
+        else
+            @assert typeof(el) ∉ skip_nodes
+        end
+    end
+end
+
 function process_body(in_el, out_body, out_head, styles, lv=false)
-    for (n, el) in enumerate(in_el.children)
+    l = length(in_el.children)
+    n = 1
+    while n <= l
+        el = in_el.children[n]
         tp = typeof(el)
         if tp ∈ skip_nodes
             deleteat!(in_el.children, n)
+            l -= 1
             continue
         elseif tp === HTMLElement{:link} &&
             islink(el, "stylesheet")
             fetch_style(el, styles)
             deleteat!(in_el.children, n)
+            l -= 1
         elseif tp === HTMLElement{:style}
             # NOTE: this is supposed to be a text element
             push!(styles, el.children[1].text)
             deleteat!(in_el.children, n)
+            l -= 1
         elseif tp === HTMLElement{:script}
             # only include ld+json scripts, ignore the rest
             isldjson(el) && push!(out_head, el)
             deleteat!(in_el.children, n)
+            l -= 1
         else
-            if tp !== HTMLText && length(el.children) !== 0
-                process_body(el, out_body, out_head, styles, true)
+            if tp !== HTMLText
+                delete!(el.attributes, "onclick")
+                length(el.children) !== 0 && process_body(el, out_body, out_head, styles, true)
             end
             # only add top level children
             lv || push!(out_body, el)
+            n += 1
         end
     end
 end
