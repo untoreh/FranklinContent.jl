@@ -164,7 +164,7 @@ function tag_link(tag, font_size::Union{Float64,Nothing}=nothing)
     if !isnothing(font_size)
         style = "font-size: $(font_size)rem"
     end
-    link = join(["/posts", globvar(:tag_page_path), tag], "/")
+    link = join([globvar(:tag_page_path), tag], "/")
     "<a href=\"$link\" style=\"$style\"> $tag </a>"
 end
 
@@ -487,11 +487,31 @@ function franklincontent_hfuncs()
     end
 end
 
+@inline function isldjson(el)
+    getattr(el, "type", "") === "application/ld+json"
+end
+
+@inline function islink(el, rel="canonical")
+    getattr(el, "rel", "") === rel
+end
+
 function load_amp()
     include(joinpath(dirname(@__FILE__), "amp.jl"))
     @eval export AMP
 end
 
+function load_minify()
+    include(joinpath(dirname(@__FILE__), "minify.jl"))
+    @eval export FranklinMinify
+end
+
+function load_yandex()
+    include(joinpath(dirname(@__FILE__), "yandex.jl"))
+    @eval export Yandex
+end
+
 export tags_crumbs, post_crumbs, page_content, iter_posts, tag_link, post_link, is_index, is_post, is_tag, lx_fun
+
+include("files.jl")
 
 end # module
