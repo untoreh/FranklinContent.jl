@@ -6,24 +6,15 @@ using Cascadia: matchFirst
 using HTTP
 using AbstractTrees: PreOrderDFS
 using Pkg: project
+using FranklinContent: walkfiles, islink, isldjson
 
 const root_dir = Ref("")
-
-include("files.jl")
 
 function set_root(root=dirname(project().path))
     root_dir[] = root
 end
 
 skip_nodes = Set(HTMLElement{sym} for sym in [:iframe, :applet, :audio, :canvas, :embed, :video, :img, :button, :form])
-
-@inline function islink(el, rel="canonical")
-    getattr(el, "rel", "") === rel
-end
-
-@inline function isldjson(el)
-    getattr(el, "type", "") === "application/ld+json"
-end
 
 const sel_body = sel"body"
 const sel_head = sel"head"
@@ -205,27 +196,34 @@ function amppage(file)
     string(amp_doc)
 end
 
-function ampdir(path; dirs=["posts", "tag", "reads", "_rss"])
-    @assert isdir(path) "Path $path is not a valid directory"
-    dir = isdirpath(path) ? dirname(path) : path
+function ampdir(target; dirs=["posts", "tag", "reads", "_rss"])
+    @assert isdir(target) "Path $target is not a valid directory"
+    dir = isdirpath(target) ? dirname(target) : target
     rpl = Regex("^$dir/") => ""
     cwd = pwd()
     cd(dir)
 
     amp_dir = joinpath(dir, "amp")
     if !isdir(amp_dir) mkpath(amp_dir) end
+    proc_dirs = Dict{String, Nothing}()
 
-    for file in walkfiles(dir; exts=Set((".html",)),
-                          dirs=Set(dirs),
-                          ex_dirs=Set(["amp"]),
-                          subdir=false)
-        html = amppage(file)
-        out_file = joinpath(amp_dir, replace(file, rpl))
-        out_dir = dirname(out_file)
-        if !isdir(out_dir) mkpath(out_dir) end
-        write(out_file, html)
+    try
+        for file in walkfiles(dir; exts=Set((".html",)),
+                              dirs=Set(dirs),
+                              ex_dirs=Set(["amp"]),
+                              subdir=false)
+            html = amppage(file)
+            out_file = joinpath(amp_dir, replace(file, rpl))
+            out_dir = dirname(out_file)
+            if out_dir ∉ keys(proc_dirs) && !isdir(out_dir)
+                mkpath(out_dir)
+                proc_dirs[out_dir] = nothing
+            end
+            write(out_file, html)
+        end
+    finally
+        cd(cwd)
     end
-    cd(cwd)
 end
 
 end

@@ -3,10 +3,10 @@ module FranklinContent
 using FranklinUtils
 using Franklin; const fr = Franklin;
 using DataStructures:DefaultDict
-using Franklin: convert_md, convert_html, pagevar, globvar, locvar, path;
+using Franklin: convert_md, convert_html, pagevar, globvar, locvar, path, refstring
 using Dates: DateFormat, Date
 using Memoization
-using Gumbo: HTMLElement
+using Gumbo: HTMLElement, getattr
 
 @doc "Wrapper for Franklin.locvar."
 function hfun_locvar(args)
@@ -164,7 +164,7 @@ function tag_link(tag, font_size::Union{Float64,Nothing}=nothing)
     if !isnothing(font_size)
         style = "font-size: $(font_size)rem"
     end
-    link = join([globvar(:tag_page_path), tag], "/")
+    link = join([globvar(:website_url), globvar(:tag_page_path), tag], "/")
     "<a href=\"$link\" style=\"$style\"> $tag </a>"
 end
 
@@ -427,6 +427,28 @@ function hfun_canonical_link(args)
         "\">"
 end
 
+@memoize function feed_name(parts...)
+    joinpath(parts..., globvar(:rss_file) * ".xml")
+end
+
+@doc "The RSS feed link tag."
+function hfun_rss_link()
+    "<link rel=\"alternate\" type=\"application/rss+xml\" href=\"" *
+         feed_name(globvar(:website_url)) * "\" title=\"$(globvar(:website_title))\">"
+end
+
+function hfun_rss_link_tag()
+    "<link rel=\"alternate\" type=\"application/rss+xml\" href=\"" *
+       feed_name(globvar(:website_url), globvar(:tag_page_path), refstring(locvar(:fd_tag))) *
+       "\" title=\"$(globvar(:website_title))\">"
+end
+
+function hfun_rss_url()
+	(isnothing(locvar(:fd_tag)) &&
+        feed_name(globvar(:website_url))) ||
+        feed_name(globvar(:website_url), globvar(:tag_page_path))
+end
+
 @doc "The html link tag for the AMP url of the current page."
 function hfun_amp_link()
     # @show keys(fr.LOCAL_VARS)
@@ -487,11 +509,11 @@ function franklincontent_hfuncs()
     end
 end
 
-@inline function isldjson(el)
+@inline function isldjson(el::HTMLElement)
     getattr(el, "type", "") === "application/ld+json"
 end
 
-@inline function islink(el, rel="canonical")
+@inline function islink(el::HTMLElement, rel="canonical")
     getattr(el, "rel", "") === rel
 end
 
