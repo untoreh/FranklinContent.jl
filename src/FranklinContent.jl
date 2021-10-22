@@ -269,7 +269,7 @@ end
 function hfun_insert_bio()
     let bio = read(joinpath(path(:assets), "bio.md"), String) |>
         x -> convert_md(x; isinternal=true)
-        replace(bio, "{{bio_link}}" => """<a rel="nofollow noopener noreferrer" href="$(locvar(:geo_link))"
+        replace(bio, "{{bio_link}}" => """<a title="Geo Link" rel="nofollow noopener noreferrer" href="$(locvar(:geo_link))"
 target="_blank"><i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i></a>
 """)
     end
