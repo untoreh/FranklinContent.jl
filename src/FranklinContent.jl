@@ -8,6 +8,14 @@ using Dates: DateFormat, Date
 using Memoization
 using Gumbo: HTMLElement, getattr
 
+macro unimp(fname)
+    quote
+        function $(esc(fname))()
+            throw("unimplemented")
+        end
+    end
+end
+
 @doc "Wrapper for Franklin.locvar."
 function hfun_locvar(args)
 	name = args[1];
@@ -287,10 +295,15 @@ function is_index(path)
     !isnothing(match(r".*/index\.(html|md)", path))
 end
 
+@doc "Regex expression for posts path"
+@memoize function posts_path_rgx(posts_path)
+    Regex("$(lstrip(posts_path, '/'))/.+")
+end
+
 @doc "Check if page is a post."
 function is_post()
     path = locvar(:fd_rpath)
-    (!isnothing(match(r"posts/.+", path)) && !is_index(path))
+    (!isnothing(match(posts_path_rgx(globvar(:posts_path)), path)) && !is_index(path))
 end
 
 @doc "Check if page is a tags page."
@@ -378,6 +391,14 @@ icons_tags =
 @doc "Wraps the `icon_tags` dict."
 hfun_icon_tag(tag) = icons_tags[tag]
 
+@doc "Either the article image, or the author image or the website logo."
+function image_url()
+    locvar(:images;
+           default=[globvar(:author_image;
+                            default=globvar(:logo))]) |>
+                                first |>
+                                x -> joinpath(globvar(:website_url), lstrip(x, '/'))
+end
 
 @doc "Wrapper to call an arbitrary function as an latex function."
 function lx_fun(com::Franklin.LxCom, _)
@@ -530,6 +551,11 @@ end
 function load_yandex()
     include(joinpath(dirname(@__FILE__), "yandex.jl"))
     @eval export Yandex
+end
+
+function load_opg()
+    include(joinpath(dirname(@__FILE__), "opg.jl"))
+    @eval export OPG
 end
 
 export tags_crumbs, post_crumbs, page_content, iter_posts, tag_link, post_link, is_index, is_post, is_tag, lx_fun
