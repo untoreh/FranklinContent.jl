@@ -207,7 +207,7 @@ end
 
 @doc "Create yandex turbo pages for a directory, outputs an RSS feed.
 These feeds need to be added to https://webmaster.yandex.com under 'Data Sources' tab."
-function turbodir(target=nothing; dirs=["posts", "tag", "reads", "_rss"])
+function turbodir(target=nothing; extensions=[".html"], dirs=["posts", "tag", "reads", "_rss"], ex_dirs=["amp"])
     isnothing(target) && begin target = path(:site) end
     @assert isdir(target) "Path $target is not a valid directory"
     turbo_dir[] = dir = isdirpath(target) ? dirname(target) : target
@@ -223,9 +223,9 @@ function turbodir(target=nothing; dirs=["posts", "tag", "reads", "_rss"])
     init_feed(io_feed)
     try
         proc_dirs = Dict{String, Nothing}()
-        for file in walkfiles(dir; exts=Set((".html",)),
+        for file in walkfiles(dir; exts=Set(extensions),
                               dirs=Set(dirs),
-                              ex_dirs=Set(["amp"]),
+                              ex_dirs=Set(ex_dirs),
                               subdir=false)
             basename(file) === "404.html" && continue
             out_file = joinpath(dir, replace(file, rpl))
