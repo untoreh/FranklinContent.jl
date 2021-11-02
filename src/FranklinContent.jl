@@ -8,6 +8,8 @@ using Dates: DateFormat, Date
 using Memoization
 using Gumbo: HTMLElement, getattr
 
+const posts_date_format = DateFormat("mm/dd/yyyy")
+
 macro unimp(fname)
     quote
         function $(esc(fname))()
@@ -60,6 +62,12 @@ function iter_posts()
     return posts_list
 end
 
+@doc "Convert post date string to date"
+@inline function post_date(post)
+    @debug @assert post.date !== nothing
+    Date(post.date, posts_date_format)
+end
+
 @doc "HTML list of recent posts.
 arg1: the root path of all the posts
 arg2: how many posts to display"
@@ -71,9 +79,10 @@ function hfun_recent_posts(m::Vector{String})
     filter!(f -> endswith(f, ".md") && f != "index.md" && !startswith(f, "."), list)
     markdown = ""
     posts = []
-    df = DateFormat("mm/dd/yyyy")
     for (_, post) in enumerate(list)
         fi = posts_path * splitext(post)[1]
+        # FIXME: https://github.com/tlienart/Franklin.jl/issues/891#issuecomment-932033412
+        fr.PAGEVAR_DEPTH[] = 0
         push!(
             posts,
             (
@@ -88,7 +97,7 @@ function hfun_recent_posts(m::Vector{String})
 
     n = n >= 0 ? n : length(posts) + 1
     for ele in
-        view(sort(posts, by=x -> Date(x.date, df), rev=true), 1:min(length(posts), n))
+        view(sort(posts, by=x -> post_date(x), rev=true), 1:min(length(posts), n))
         markdown *= "* [($(ele.date)) $(ele.title)](../$(ele.link)) -- _$(ele.description)_ \n"
     end
 
@@ -296,8 +305,8 @@ function is_index(path)
 end
 
 @doc "Regex expression for posts path"
-@memoize function posts_path_rgx(posts_path)
-    Regex("$(lstrip(posts_path, '/'))/.+")
+function posts_path_rgx(posts_path)
+    Regex("$(strip(posts_path, '/'))/.+")
 end
 
 @doc "Check if page is a post."
@@ -386,7 +395,8 @@ icons_tags =
                     "agri" => "fas fa-tree",
                     "things-that-should-not-be published" => "fas fa-comment-dots",
                     "tools" => "fas fa-tools",
-                    "trading" => "fas fa-chart-line"
+                    "trading" => "fas fa-chart-line",
+                    "media" => "fas fa-tv-retro"
                 ))
 @doc "Wraps the `icon_tags` dict."
 hfun_icon_tag(tag) = icons_tags[tag]
@@ -556,6 +566,11 @@ end
 function load_opg()
     include(joinpath(dirname(@__FILE__), "opg.jl"))
     @eval export OPG
+end
+
+function load_simkl()
+    include(joinpath(dirname(@__FILE__), "simkl.jl"))
+    @eval export Simkl
 end
 
 export tags_crumbs, post_crumbs, page_content, iter_posts, tag_link, post_link, is_index, is_post, is_tag, lx_fun
