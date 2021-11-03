@@ -146,6 +146,7 @@ const turbo_item_content = HTMLElement(:body)
 const io_item = IOBuffer()
 @doc "Generates a turbo page feed item from a html file."
 function turboitem(file; cosel=content_sel)
+    @debug file
     html = parsehtml(read(file, String))
     # content = Cascadia.matchFirst(cosel, html.root)
     head = Cascadia.matchFirst(head_sel, html.root)
@@ -154,7 +155,7 @@ function turboitem(file; cosel=content_sel)
     empty!(turbo_item_content.children)
     empty!(turbo_item_content.attributes)
 
-    page_lang[] = getattr(html.root, "lang")
+    page_lang[] = getattr(html.root, "lang", globvar(:lang_code; default="en"))
     process_head(head)
    """
 <item turbo="true">

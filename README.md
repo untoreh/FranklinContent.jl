@@ -10,10 +10,12 @@ Some things you can generate:
 - HTML titles with descriptions and canonical links
 - AMP webpages, only text, no additional amp components, non text tags (videos, images, iframes) are stripped.
 - Open Graph protocol meta tags for normal pages (type website) and posts (type article) with twitter cards.
-
+- A list of user watched shows/movies from [simkl]
 
 #### Other amp conversion projects
 
 - https://github.com/Lullabot/amp-library
 - https://github.com/dorokhin/amp-tools
 - https://github.com/magyarandras/amp-converter
+
+[simkl]: https://simkl.com/
