@@ -17,7 +17,6 @@ const creds = IdDict{String, String}()
 merge!(creds, JSON.parse(read(creds_path[], String)))
 const access_token = Ref(get(creds, "access_token", ""))
 const headers = []
-const imdb_url =
 
 @inline function tv_url(ids)
     if "imdb" ∈ keys(ids)
@@ -53,9 +52,7 @@ end
 function set_headers!()
     empty!(headers)
     push!(headers, "Content-Type" => "application/json")
-    # push!(headers, "Authorization" => "Bearer $(base64encode(access_token[]))")
     push!(headers, "Authorization" => "Bearer $(access_token[])")
-    # push!(headers, "Authorization" => "Bearer $(base64encode(creds["client_secret"]))")
     push!(headers, "simkl-api-key" => creds["client_id"])
 end
 
@@ -84,15 +81,14 @@ function simkl_auth()
     set_headers!()
 end
 
-function simkl_fetch_all_items(type="", status="")
-    date_from = get(creds, "date_from", "")
+function simkl_fetch_all_items(type="", status=""; reset=false)
+    date_from = reset ? "" : get(creds, "date_from", "")
     query = Dict()
+    prev_items = nothing
     isempty(date_from) || begin
 	    query["date_from"] = date_from
-        if isfile(items_path[])
+        isfile(items_path[]) && begin
             prev_items = JSON.parse(read(items_path[], String))
-        else
-            prev_items = nothing
         end
     end
     set_headers!()
@@ -105,7 +101,8 @@ function simkl_fetch_all_items(type="", status="")
         items = JSON.parse(String(res.body))
         if !isnothing(items)
             merge!(prev_items, items)
-            write(items_path[], prev_items)
+            @show prev_items
+            write(items_path[], JSON.json(prev_items))
         end
     end
     creds["date_from"] = string(now())
@@ -113,9 +110,9 @@ function simkl_fetch_all_items(type="", status="")
     prev_items
 end
 
-function simkl_get_all_items(update=false; kwargs...)
+function simkl_get_all_items(update=false; reset=false, kwargs...)
     if update || !isfile(items_path[])
-        simkl_fetch_all_items(;kwargs...)
+        simkl_fetch_all_items(;reset, kwargs...)
     else
 	    JSON.parse(read(items_path[], String))
     end
@@ -160,18 +157,36 @@ function hfun_simkl_list()
 	simkl_completed_shows_list()
 end
 
-# howcomp = 0
-# watched_shows = Set()
-# for el in items["shows"]
-#     if el["status"] === "completed"
-#         title = el["show"]["title"]
-#         display(title)
-#         push!(watched_shows, title)
-#         howcomp += 1
-#     end
-# end
-# @show "you have watched $howcomp shows"
+function simkl_get_shows(status="watching"; types = ["shows", "anime"])
+    all_items = simkl_get_all_items()
+    shows = []
+    for tp in types
+        for el in all_items[tp]
+            if el["status"] === status
+                push!(shows, el)
+            end
+        end
+    end
+    shows
+end
+
+function simkl_get_show_by_title(title; status="watching")
+    shows = simkl_get_shows(status)
+    for s in shows
+        s["show"]["title"] === title && return s
+    end
+end
 
 export hfun_simkl_list
+
+function get_show_id(show)
+    ids = show["ids"]
+    k = keys(show["ids"])
+    # medusa doesn't want imdb as indexer
+    # "imdb" ∈ k && return "imdb" => ids["imdb"]
+    "tvdb" ∈ k && return "tvdb" => ids["tvdb"]
+    "tmdb" ∈ k && return "tmdb" => ids["tmdb"]
+    "anidb" ∈ k && return "imdb" => ids["anidb"]
+end
 
 end
