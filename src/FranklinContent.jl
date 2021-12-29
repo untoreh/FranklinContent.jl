@@ -396,7 +396,7 @@ icons_tags =
                     "things-that-should-not-be published" => "fas fa-comment-dots",
                     "tools" => "fas fa-tools",
                     "trading" => "fas fa-chart-line",
-                    "media" => "fas fa-tv-retro"
+                    "media" => "fas fa-tv"
                 ))
 @doc "Wraps the `icon_tags` dict."
 hfun_icon_tag(tag) = icons_tags[tag]
