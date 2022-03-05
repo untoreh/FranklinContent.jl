@@ -22,7 +22,7 @@ function load_html_minify()
     end
 end
 
-function minify_website(;minify_css=true, minify_js=true)
+function minify_website(;minify_css=true, minify_js=true, minify_kwargs...)
     site = path(:site)
     @assert isdir(site)
     # remove toplevel paths
@@ -48,7 +48,8 @@ function minify_website(;minify_css=true, minify_js=true)
         println(buf, opentag, read(file, String), closetag)
         min = minify(;code=String(take!(buf)),
                      minify_css,
-                     minify_js)
+                     minify_js,
+                     minify_kwargs...)
         min = replace(min, rx_tags[opentag] => "")
         min = replace(min, rx_tags[closetag] => "")
         write(file, min)
