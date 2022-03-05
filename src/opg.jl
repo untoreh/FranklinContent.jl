@@ -47,13 +47,10 @@ function _basic(;title, type, url, image, prefix="")
     end
 end
 
-function _optional(;description, site_name, locale, locale_alt, audio, video, determiner)
+function _optional(;description, site_name, locale, audio, video, determiner)
     isempty(description) || write_meta_tag("description", description)
     isempty(site_name) || write_meta_tag("site_name", site_name)
     isempty(locale) || write_meta_tag("locale", locale)
-    for alt in locale_alt
-        write_meta_tag("locale:alternate", alt)
-    end
     isempty(audio) || write_meta_tag("audio", audio)
     isempty(video) || write_meta_tag("audio", video)
     isempty(determiner) || write_meta_tag("audio", determiner)
@@ -61,9 +58,9 @@ end
 
 @doc "Generates an HTML String containing opengraph meta tags for one item."
 function opengraph_tags(as_string=false;title, type, url, image, description="", site_name="",
-                        locale="", locale_alt=[], audio="", video="", determiner="")
+                        locale="", audio="", video="", determiner="")
     _basic(; title, type, url, image)
-    _optional(; description, site_name, locale, locale_alt, audio, video, determiner)
+    _optional(; description, site_name, locale, audio, video, determiner)
     as_string && String(take!(tbuf))
 end
 
@@ -112,8 +109,7 @@ end
 @doc "Meta tags for franklin site."
 function hfun_opg_franklin()
     path = locvar(:fd_rpath)
-    locale = globvar(:lang)
-    locale_alt = _franklin_langs()
+    locale = globvar(:locale; default="en_US")
     image = image_url()
     if is_post()
         title=locvar(:title)
@@ -121,13 +117,13 @@ function hfun_opg_franklin()
         type="article"
         url=post_link(path; rel=false)
         site_name=globvar(:website_title)
-        opengraph_tags(;title, type, url, image, description, site_name, locale, locale_alt)
+        opengraph_tags(;title, type, url, image, description, site_name, locale)
     else
         title=globvar(:website_title)
         description=globvar(:website_description)
         type="website"
         url=globvar(:website_url)
-        opengraph_tags(;title, type, url, image, description, locale, locale_alt)
+        opengraph_tags(;title, type, url, image, description, locale)
     end
     twitter_meta("card", "summary")
     twitter_meta("creator", globvar(:twitter_user))
