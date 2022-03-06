@@ -97,16 +97,18 @@ function process_head(in_head, out_head, styles)
             if canonical_unset && islink(el, "canonical")
                 push!(out_head, el)
                 canonical_unset = false
-            elseif islink(el, "icon")
-                push!(out_head, el)
             elseif islink(el, "stylesheet")
                 fetch_style(el, styles)
+            else
+                push!(out_head, el)
             end
         elseif title_unset && tp === HTMLElement{:title}
             push!(out_head, el)
             title_unset = false
         elseif tp === HTMLElement{:script} &&
             isldjson(el)
+            push!(out_head, el)
+        else
             push!(out_head, el)
         end
     end
