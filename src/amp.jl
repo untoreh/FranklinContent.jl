@@ -108,6 +108,9 @@ function process_head(in_head, out_head, styles)
         elseif tp === HTMLElement{:script} &&
             isldjson(el)
             push!(out_head, el)
+        elseif tp === HTMLElement{:meta} &&
+            getattr(el, "name", "") === "viewport"
+            continue
         else
             push!(out_head, el)
         end
