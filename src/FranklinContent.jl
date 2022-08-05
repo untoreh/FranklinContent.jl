@@ -24,6 +24,16 @@ function hfun_locvar(args)
     locvar(Symbol(name))
 end
 
+@doc "Toggle DEPLOY page var on/off if `DEPLOY` env var is set/unset."
+function hfun_setdeploy()
+    if "DEPLOY" in keys(ENV)
+        fr.set_var!(fr.LOCAL_VARS, "DEPLOY", true)
+    elseif "DEPLOY" in keys(fr.LOCAL_VARS)
+        delete!(fr.LOCAL_VARS, "DEPLOY")
+    end
+    ""
+end
+
 @doc "Text wrapped in an HTML tag with a specified color."
 function hfun_color(args)
     txt = args[1]
