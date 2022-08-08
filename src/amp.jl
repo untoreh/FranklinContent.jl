@@ -140,7 +140,8 @@ function process_body(in_el, out_body, out_head, styles, lv=false)
             l -= 1
             continue
         elseif tp === HTMLElement{:link} &&
-            islink(el, "stylesheet")
+            (islink(el, "stylesheet") ||
+            (islink(el, "preload") && getattr(el, "as") == "style"))
             fetch_style(el, styles)
             deleteat!(in_el.children, n)
             l -= 1
